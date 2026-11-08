@@ -1,5 +1,5 @@
 // 版を上げると古いキャッシュを捨てて取り直す
-const CACHE = 'gaman-chokin-v2';
+const CACHE = 'gaman-chokin-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

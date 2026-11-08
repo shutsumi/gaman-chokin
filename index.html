@@ -75,8 +75,6 @@ section:first-child{border-top:none}
 .conv .n{font-family:var(--num);font-weight:900;font-size:24px}
 .conv .n small{font-family:"Noto Sans JP",sans-serif;font-size:12px;font-weight:400;margin-left:2px}
 
-/* chart */
-.chart svg{display:block;width:100%;height:auto}
 
 /* items */
 .items{list-style:none}
@@ -173,7 +171,7 @@ nav.tabs .add::before{display:none}
   <!-- ホーム -->
   <main class="view" id="v-home">
     <section class="hero">
-      <p class="label">これまでに我慢した額</p>
+      <p class="label">全部我慢すると…</p>
       <p class="big" id="total"><span class="yen">¥</span><span id="total-n">0</span></p>
       <p class="month">今月 <b id="month-n">¥0</b></p>
       <div class="split">
@@ -195,16 +193,6 @@ nav.tabs .add::before{display:none}
       <ul class="conv" id="conv"></ul>
     </section>
 
-    <section class="chart">
-      <h2>月別の推移</h2>
-      <div id="chart"></div>
-      <div class="legend" style="margin-top:8px"><span class="lg-saved">貯金に移した</span><span class="lg-mid">我慢した（未移動）</span></div>
-    </section>
-
-    <section>
-      <h2>最近の我慢</h2>
-      <ul class="items" id="recent"></ul>
-    </section>
   </main>
 
   <!-- 履歴 -->
@@ -397,39 +385,6 @@ function renderHome(animateFrom){
     return `<li><span>${esc(c.name)} <span class="muted">${yen(c.price)}</span></span><span class="n">${n.toLocaleString('ja-JP')}<small>回分</small></span></li>`;
   }).join('');
 
-  renderChart();
-
-  const recent = sorted().slice(0,5);
-  $('recent').innerHTML = recent.length ? recent.map(itemHtml).join('')
-    : '<li class="empty">まだ記録がありません。<br>買うのをやめたら「＋ 我慢した」から記録しよう。</li>';
-}
-
-function renderChart(){
-  const months = [];
-  const d = new Date(); d.setDate(1);
-  for (let i=5; i>=0; i--){
-    const x = new Date(d.getFullYear(), d.getMonth()-i, 1);
-    months.push(`${x.getFullYear()}-${pad(x.getMonth()+1)}`);
-  }
-  const data = months.map(k => ({k, ...totals(state.items.filter(i => i.date.startsWith(k)))}));
-  const max = Math.max(1, ...data.map(x => x.gaman));
-  const W=340, H=170, top=22, bottom=26, h=H-top-bottom, bw=30, gap=(W - bw*6)/6;
-  const short = n => n>=10000 ? (n/10000).toFixed(n>=100000?0:1).replace(/\.0$/,'')+'万' : n.toLocaleString('ja-JP');
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="直近6か月の我慢額">`;
-  svg += `<line x1="0" x2="${W}" y1="${top+h}" y2="${top+h}" stroke="#e6e6e6"/>`;
-  data.forEach((x,i) => {
-    const cx = gap/2 + i*(bw+gap);
-    const ha = x.gaman/max*h, hs = x.saved/max*h;
-    const isNow = i === 5;
-    if (x.gaman > 0){
-      svg += `<rect x="${cx}" y="${top+h-ha}" width="${bw}" height="${ha}" fill="#c9c9c9"/>`;
-      if (hs > 0) svg += `<rect x="${cx}" y="${top+h-hs}" width="${bw}" height="${hs}" fill="#ff4b1e"/>`;
-      svg += `<text x="${cx+bw/2}" y="${top+h-ha-6}" text-anchor="middle" font-size="11" font-family="Lato,sans-serif" font-weight="700" fill="#545454">${short(x.gaman)}</text>`;
-    }
-    svg += `<text x="${cx+bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="${isNow?'#545454':'#9a9a9a'}" font-weight="${isNow?700:400}">${parseInt(x.k.slice(5),10)}月</text>`;
-  });
-  svg += '</svg>';
-  $('chart').innerHTML = svg;
 }
 
 function itemHtml(it){
@@ -465,7 +420,6 @@ function onItemClick(e){
   else if (it.status === 'bought') toast('買ったものは我慢額から外しました');
   else if (before !== 'gaman') toast('我慢中に戻しました');
 }
-$('recent').addEventListener('click', onItemClick);
 $('all').addEventListener('click', onItemClick);
 $('filter').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
