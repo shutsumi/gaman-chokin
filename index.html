@@ -65,11 +65,6 @@ section:first-child{border-top:none}
 .chip{font-size:12px;padding:3px 10px;border:1px solid var(--line);color:var(--sub)}
 .chip.on-bought{border-color:var(--text);color:var(--text);font-weight:700}
 .tag{font-size:11px;padding:0 6px;border:1px solid var(--line)}
-.url-row{display:flex;gap:6px}
-.url-row input{flex:1;min-width:0}
-.url-row button{flex:none;padding:0 14px;border:1px solid var(--line);font-size:13px;color:var(--text)}
-.url-hint{font-size:11px;color:var(--sub);margin-top:4px;min-height:1.4em}
-.item-link{color:var(--accent);text-decoration:none;font-weight:700}
 .empty{text-align:center;color:var(--sub);padding:28px 0;font-size:13px}
 .now-head{display:flex;justify-content:space-between;align-items:baseline}
 .now-head h2{margin-bottom:0}
@@ -77,7 +72,7 @@ section:first-child{border-top:none}
 /* forms */
 label.f{display:block;margin-bottom:14px}
 label.f>span{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
-input[type=text],input[type=date],input[type=url],select,textarea{
+input[type=text],select,textarea{
   width:100%;padding:11px 12px;border:1px solid var(--line);background:#fff;border-radius:0;
   font-size:16px;-webkit-appearance:none;appearance:none}
 select{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a9a9a'/%3E%3C/svg%3E") no-repeat right 12px center}
@@ -170,7 +165,7 @@ nav.tabs .add::before{display:none}
 
 <nav class="tabs"><div class="in">
   <button data-v="home" class="on">ホーム</button>
-  <button class="add" id="open-add"><span>＋ 我慢した</span></button>
+  <button class="add" id="open-add"><span>＋ 追加</span></button>
   <button data-v="settings">設定</button>
 </div></nav>
 
@@ -178,16 +173,8 @@ nav.tabs .add::before{display:none}
 <dialog id="sheet">
   <form class="sheet" id="form" method="dialog" novalidate>
     <div class="sheet-head"><h3 id="sheet-title">我慢した</h3><button type="button" class="x" id="close" aria-label="閉じる">×</button></div>
-    <div class="f" style="margin-bottom:14px">
-      <label for="f-url" style="display:block;font-size:12px;color:var(--sub);margin-bottom:4px">商品ページのURL（Amazonなど・任意）</label>
-      <div class="url-row"><input type="url" id="f-url" inputmode="url" placeholder="https://www.amazon.co.jp/…" autocomplete="off"><button type="button" id="f-paste">貼り付け</button></div>
-      <p class="url-hint" id="f-url-hint"></p>
-    </div>
     <label class="f"><span>商品名</span><input type="text" id="f-name" required placeholder="例：新作のスニーカー" autocomplete="off"></label>
-    <div class="row">
-      <label class="f"><span>金額</span><div class="price-in"><input type="text" inputmode="numeric" id="f-price" required placeholder="0"></div></label>
-      <label class="f"><span>日付</span><input type="date" id="f-date"></label>
-    </div>
+    <label class="f"><span>金額</span><div class="price-in"><input type="text" inputmode="numeric" id="f-price" required placeholder="0"></div></label>
     <label class="f"><span>メモ</span><textarea id="f-memo" rows="2" placeholder="なぜ我慢したか など"></textarea></label>
     <div id="f-status-wrap" hidden>
       <div class="seg" id="f-status">
@@ -291,7 +278,7 @@ function renderHome(animateFrom){
   const now = all.filter(i => i.status !== 'bought'), bought = all.filter(i => i.status === 'bought');
   $('now-count').textContent = `我慢中 ${now.length}件` + (bought.length ? `・買った ${bought.length}件` : '');
   $('now').innerHTML = all.length ? [...now, ...bought].map(itemHtml).join('')
-    : '<li class="empty">まだ何もありません。<br>買うのをやめたら「＋ 我慢した」から記録しよう。</li>';
+    : '<li class="empty">まだ何もありません。<br>買うのをやめたら「＋ 追加」から記録しよう。</li>';
 
 
 }
@@ -300,7 +287,7 @@ function itemHtml(it){
   const tag = '';
   return `<li class="item ${it.status}" data-id="${it.id}">
     <button class="item-main" data-act="edit"><span class="item-name">${esc(it.name)}</span><span class="item-price">${yen(it.price)}</span></button>
-    <div class="item-meta"><span>${it.date.replace(/-/g,'/')}</span>${tag}${it.url ? `<a class="item-link" href="${esc(it.url)}" target="_blank" rel="noopener">商品ページ ↗</a>` : ''}</div>
+    <div class="item-meta"><span>${it.date.replace(/-/g,'/')}</span>${tag}</div>
     ${memoHtml(it.memo)}
     <div class="chips">
       <button class="chip ${it.status==='bought'?'on-bought':''}" data-act="bought">やっぱり買った</button>
@@ -320,62 +307,6 @@ function onItemClick(e){
 }
 $('now').addEventListener('click', onItemClick);
 
-/* ---------- URL ---------- */
-// 貼り付けたテキスト（URLだけ、またはAmazonアプリの共有文）から URL と商品名を取り出す
-function parseShared(text){
-  text = String(text || '').trim();
-  const m = text.match(/https?:\/\/[^\s]+/);
-  if (!m) return null;
-  let url = m[0].replace(/[)）」』、。]+$/, '');
-  let name = text.replace(m[0], '').trim();
-  let u; try { u = new URL(url); } catch(e) { return null; }
-  const isAmazon = /(^|\.)amazon\.|(^|\.)amzn\./.test(u.hostname);
-  if (isAmazon){
-    const seg = u.pathname.split('/').filter(Boolean);
-    let i = seg.indexOf('dp'); if (i < 0) { const g = seg.indexOf('product'); if (g > 0 && seg[g-1]==='gp') i = g; }
-    const asin = i >= 0 ? seg[i+1] : null;
-    if (asin && /^[A-Z0-9]{10}$/i.test(asin)){
-      if (!name && i > 0 && seg[i-1] !== 'gp'){
-        try { name = decodeURIComponent(seg[i-1]).replace(/-/g, ' '); } catch(e){}
-      }
-      url = `https://${u.hostname}/dp/${asin}`;  // 追跡用の長いパラメータを落とす
-    }
-  }
-  if (isAmazon && /^Amazon(\.co\.jp|\.com)?\s*[:：]/i.test(name)) name = name.replace(/\s+[:：]\s+[^:：]+$/, '');
-  name = name.replace(/^(Amazon(\.co\.jp|\.com)?\s*[:：|｜]\s*)/i, '')
-             .replace(/\s*[:：|｜]\s*Amazon.*$/i, '')
-             .replace(/^["「『]|["」』]$/g, '').trim();
-  return {url, name, isAmazon};
-}
-function applyShared(text){
-  const r = parseShared(text);
-  if (!r) return false;
-  $('f-url').value = r.url;
-  if (r.name && !$('f-name').value.trim()) $('f-name').value = r.name.slice(0, 80);
-  $('f-url-hint').textContent = r.name ? '商品名を入れました。金額を入れてください' : 'URLを入れました。商品名と金額を入れてください';
-  setTimeout(() => (r.name ? $('f-price') : $('f-name')).focus(), 50);
-  return true;
-}
-function cleanUrlField(){
-  const v = $('f-url').value.trim();
-  if (!v) return '';
-  const r = parseShared(v);
-  return r ? r.url : '';
-}
-$('f-url').addEventListener('paste', e => {
-  const t = (e.clipboardData || window.clipboardData)?.getData('text');
-  if (t && applyShared(t)) e.preventDefault();
-});
-$('f-url').addEventListener('change', e => { if (e.target.value) applyShared(e.target.value); });
-$('f-paste').addEventListener('click', async () => {
-  try {
-    const t = await navigator.clipboard.readText();
-    if (!applyShared(t)) toast('クリップボードにURLがありません');
-  } catch(e) {
-    $('f-url').focus(); toast('欄を長押しして貼り付けてください');
-  }
-});
-
 /* ---------- sheet ---------- */
 function setSeg(s){
   editStatus = s;
@@ -385,17 +316,14 @@ function openSheet(it){
   editingId = it ? it.id : null;
   $('sheet-title').textContent = it ? '記録を編集' : '我慢した';
   $('f-name').value = it?.name ?? '';
-  $('f-url').value = it?.url ?? '';
-  $('f-url-hint').textContent = '';
   $('f-price').value = it ? it.price.toLocaleString('ja-JP') : '';
-  $('f-date').value = it?.date ?? today();
   $('f-memo').value = it?.memo ?? '';
   $('f-status-wrap').hidden = !it;
   $('f-delete').hidden = !it;
   $('f-submit').textContent = it ? '保存する' : '記録する';
   setSeg(it?.status ?? 'gaman');
   $('sheet').showModal();
-  if (!it && !$('f-url').value) setTimeout(()=> $('f-name').focus(), 50);
+  if (!it) setTimeout(()=> $('f-name').focus(), 50);
 }
 $('open-add').addEventListener('click', () => openSheet());
 $('close').addEventListener('click', () => $('sheet').close());
@@ -411,13 +339,13 @@ $('form').addEventListener('submit', e => {
   const price = parseYen($('f-price').value);
   if (!name){ $('f-name').focus(); return toast('商品名を入れてください'); }
   if (!price){ $('f-price').focus(); return toast('金額を入れてください'); }
-  const data = {name, price, date:$('f-date').value || today(), memo:$('f-memo').value.trim(), url:cleanUrlField()};
+  const data = {name, price, memo:$('f-memo').value.trim()};
   const prevTotal = totals(state.items).gaman;
   if (editingId){
     Object.assign(state.items.find(x => x.id===editingId), data, {status:editStatus});
     save(); $('sheet').close(); render(); toast('保存しました');
   } else {
-    state.items.push({id:uid(), ...data, status:'gaman', createdAt:Date.now()});
+    state.items.push({id:uid(), ...data, date:today(), status:'gaman', createdAt:Date.now()});
     save(); $('sheet').close();
     show('home');
     celebrate(price, prevTotal);
@@ -506,14 +434,6 @@ function toast(msg){
 }
 
 render();
-(() => {
-  const q = new URLSearchParams(location.search);
-  const shared = [q.get('title'), q.get('text'), q.get('url')].filter(Boolean).join(' ');
-  if (!shared) return;
-  history.replaceState(null, '', location.pathname);
-  openSheet();
-  applyShared(shared);
-})();
 if ('serviceWorker' in navigator && location.protocol !== 'file:'){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
