@@ -236,8 +236,6 @@ nav.tabs .add::before{display:none}
       <button class="link-btn" id="s-conv-add">＋ 追加する</button>
     </section>
     <section>
-      <h2>カテゴリ</h2>
-      <label class="f"><span>1行に1つ</span><textarea id="s-cats" rows="6"></textarea></label>
       <button class="btn primary" id="s-save">設定を保存</button>
     </section>
     <section>
@@ -267,7 +265,6 @@ nav.tabs .add::before{display:none}
       <label class="f"><span>金額</span><div class="price-in"><input type="text" inputmode="numeric" id="f-price" required placeholder="0"></div></label>
       <label class="f"><span>日付</span><input type="date" id="f-date"></label>
     </div>
-    <label class="f"><span>カテゴリ</span><select id="f-cat"></select></label>
     <label class="f"><span>メモ / URL</span><textarea id="f-memo" rows="2" placeholder="なぜ我慢したか、商品ページのURLなど"></textarea></label>
     <div id="f-status-wrap" hidden>
       <div class="seg" id="f-status">
@@ -296,7 +293,6 @@ const DEFAULT_SETTINGS = {
   goalName: '旅行',
   goalAmount: 100000,
   conversions: [{name:'カフェラテ',price:500},{name:'ランチ',price:1000},{name:'映画',price:2000}],
-  categories: ['食べ物','飲み物','服・小物','ガジェット','趣味','その他'],
 };
 const STATUS_LABEL = {gaman:'我慢中', saved:'貯金に移した', bought:'やっぱり買った'};
 
@@ -440,7 +436,7 @@ function itemHtml(it){
   const tag = '';
   return `<li class="item ${it.status}" data-id="${it.id}">
     <button class="item-main" data-act="edit"><span class="item-name">${esc(it.name)}</span><span class="item-price">${yen(it.price)}</span></button>
-    <div class="item-meta"><span>${it.date.replace(/-/g,'/')}</span><span>${esc(it.category)}</span>${tag}</div>
+    <div class="item-meta"><span>${it.date.replace(/-/g,'/')}</span>${tag}</div>
     ${memoHtml(it.memo)}
     <div class="chips">
       <button class="chip ${it.status==='saved'?'on-saved':''}" data-act="saved">貯金に移した</button>
@@ -479,11 +475,6 @@ $('filter').addEventListener('click', e => {
 });
 
 /* ---------- sheet ---------- */
-function fillCats(selected){
-  const cats = state.settings.categories.length ? state.settings.categories : ['その他'];
-  const list = selected && !cats.includes(selected) ? [...cats, selected] : cats;
-  $('f-cat').innerHTML = list.map(c => `<option${c===selected?' selected':''}>${esc(c)}</option>`).join('');
-}
 function setSeg(s){
   editStatus = s;
   [...$('f-status').children].forEach(b => b.classList.toggle('on', b.dataset.s===s));
@@ -494,7 +485,6 @@ function openSheet(it){
   $('f-name').value = it?.name ?? '';
   $('f-price').value = it ? it.price.toLocaleString('ja-JP') : '';
   $('f-date').value = it?.date ?? today();
-  fillCats(it?.category);
   $('f-memo').value = it?.memo ?? '';
   $('f-status-wrap').hidden = !it;
   $('f-delete').hidden = !it;
@@ -517,7 +507,7 @@ $('form').addEventListener('submit', e => {
   const price = parseYen($('f-price').value);
   if (!name){ $('f-name').focus(); return toast('商品名を入れてください'); }
   if (!price){ $('f-price').focus(); return toast('金額を入れてください'); }
-  const data = {name, price, date:$('f-date').value || today(), category:$('f-cat').value, memo:$('f-memo').value.trim()};
+  const data = {name, price, date:$('f-date').value || today(), memo:$('f-memo').value.trim()};
   const prevTotal = totals(state.items).gaman;
   if (editingId){
     Object.assign(state.items.find(x => x.id===editingId), data, {status:editStatus});
@@ -601,7 +591,6 @@ function fillSettings(){
   $('s-goal-amt').value = s.goalAmount ? s.goalAmount.toLocaleString('ja-JP') : '';
   $('s-conv').innerHTML = '';
   s.conversions.forEach(c => $('s-conv').appendChild(convRow(c)));
-  $('s-cats').value = s.categories.join('\n');
 }
 $('s-conv-add').addEventListener('click', () => { const r=convRow(); $('s-conv').appendChild(r); r.querySelector('input').focus(); });
 $('s-goal-amt').addEventListener('input', e => { const n=parseYen(e.target.value); e.target.value = n ? n.toLocaleString('ja-JP') : ''; });
@@ -613,7 +602,6 @@ $('s-save').addEventListener('click', () => {
     const [n,p] = r.querySelectorAll('input');
     return {name:n.value.trim(), price:parseYen(p.value)};
   }).filter(c => c.name && c.price>0);
-  s.categories = [...new Set($('s-cats').value.split('\n').map(x=>x.trim()).filter(Boolean))];
   save(); render(); fillSettings(); toast('設定を保存しました');
 });
 $('s-export').addEventListener('click', () => {
