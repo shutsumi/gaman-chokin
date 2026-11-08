@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="我慢貯金">
+<title>我慢貯金</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --accent:#ff4b1e; --accent-soft:#ffd9cf; --text:#545454; --sub:#9a9a9a;
+  --bg:#ffffff; --panel:#f5f5f4; --line:#e6e6e6; --mid:#c9c9c9;
+  --num:"Lato","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{
+  font-family:"Noto Sans JP",system-ui,-apple-system,sans-serif;color:var(--text);
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+a{color:var(--accent)}
+.wrap{max-width:520px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 16px 24px}
+[hidden]{display:none!important}
+h2{font-size:13px;font-weight:700;letter-spacing:.12em;margin-bottom:12px}
+section{padding:24px 0;border-top:1px dotted var(--mid)}
+section:first-child{border-top:none}
+.num{font-family:var(--num);font-weight:700;font-variant-numeric:tabular-nums}
+.muted{color:var(--sub);font-size:12px}
+
+/* hero */
+.hero{text-align:center;padding:28px 0 24px}
+.hero .label{font-size:13px;letter-spacing:.15em}
+.big{font-family:var(--num);font-weight:900;font-size:56px;line-height:1.15;letter-spacing:-.01em;margin:6px 0 2px;transition:color .4s}
+.big .yen{font-size:.5em;margin-right:2px;vertical-align:.35em}
+.big.pop{color:var(--accent)}
+.month{font-size:14px}
+.month b{font-family:var(--num);color:var(--accent);font-size:18px;margin-left:4px}
+.split{display:flex;margin-top:20px;border:1px solid var(--line)}
+.split div{flex:1;padding:10px 4px}
+.split div+div{border-left:1px solid var(--line)}
+.split .k{font-size:11px;color:var(--sub);display:block}
+.split .v{font-family:var(--num);font-weight:700;font-size:17px}
+
+/* goal */
+.goal-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.goal-name{font-weight:700;font-size:16px}
+.goal-pct{font-family:var(--num);font-weight:900;font-size:22px;color:var(--accent)}
+.bar{position:relative;height:10px;background:var(--panel);margin:10px 0 8px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.bar .b-all{background:var(--accent-soft)}
+.bar .b-saved{background:var(--accent)}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--sub);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:0}
+.lg-saved::before{background:var(--accent)}
+.lg-all::before{background:var(--accent-soft)}
+.lg-mid::before{background:var(--mid)}
+
+/* conversions */
+.conv{list-style:none}
+.conv li{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.conv li:last-child{border-bottom:none}
+.conv .n{font-family:var(--num);font-weight:900;font-size:24px}
+.conv .n small{font-family:"Noto Sans JP",sans-serif;font-size:12px;font-weight:400;margin-left:2px}
+
+/* chart */
+.chart svg{display:block;width:100%;height:auto}
+
+/* items */
+.items{list-style:none}
+.item{padding:12px 0;border-bottom:1px solid var(--line)}
+.item-main{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left}
+.item-name{flex:1;min-width:0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-price{font-family:var(--num);font-weight:700;font-size:16px}
+.item.bought .item-name,.item.bought .item-price{color:var(--sub);text-decoration:line-through}
+.item-meta{font-size:12px;color:var(--sub);display:flex;gap:8px;align-items:center;margin-top:2px;flex-wrap:wrap}
+.item-memo{font-size:12px;color:var(--sub);margin-top:2px;word-break:break-all}
+.chips{display:flex;gap:6px;margin-top:8px}
+.chip{font-size:12px;padding:3px 10px;border:1px solid var(--line);color:var(--sub)}
+.chip.on-saved{border-color:var(--accent);color:var(--accent);font-weight:700}
+.chip.on-bought{border-color:var(--text);color:var(--text);font-weight:700}
+.tag{font-size:11px;padding:0 6px;border:1px solid var(--line)}
+.tag.saved{color:var(--accent);border-color:var(--accent)}
+.empty{text-align:center;color:var(--sub);padding:28px 0;font-size:13px}
+.filter{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.filter button{font-size:12px;padding:4px 12px;border:1px solid var(--line);color:var(--sub)}
+.filter button.on{border-color:var(--text);color:var(--text);font-weight:700}
+
+/* forms */
+label.f{display:block;margin-bottom:14px}
+label.f>span{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
+input[type=text],input[type=date],input[type=url],select,textarea{
+  width:100%;padding:11px 12px;border:1px solid var(--line);background:#fff;border-radius:0;
+  font-size:16px;-webkit-appearance:none;appearance:none}
+select{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a9a9a'/%3E%3C/svg%3E") no-repeat right 12px center}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--text)}
+textarea{resize:vertical;min-height:64px}
+.price-in{position:relative}
+.price-in::before{content:"¥";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:var(--num);font-weight:700;color:var(--sub)}
+.price-in input{padding-left:28px;font-family:var(--num);font-weight:700;font-size:20px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.btn{display:block;width:100%;padding:13px;font-weight:700;letter-spacing:.1em;border:1px solid var(--text)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ghost{border-color:var(--line);color:var(--sub);font-weight:400}
+.btn+.btn{margin-top:8px}
+.seg{display:flex;border:1px solid var(--line);margin-bottom:14px}
+.seg button{flex:1;padding:9px 4px;font-size:13px;color:var(--sub)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--text);color:#fff;font-weight:700}
+.seg button.on[data-s=saved]{background:var(--accent)}
+.conv-edit{display:flex;gap:6px;margin-bottom:6px}
+.conv-edit input:first-child{flex:2}
+.conv-edit input:nth-child(2){flex:1;font-family:var(--num)}
+.conv-edit button{width:40px;color:var(--sub);font-size:18px;border:1px solid var(--line)}
+.link-btn{font-size:13px;color:var(--accent);padding:4px 0}
+
+/* dialog */
+dialog{border:none;padding:0;width:100%;max-width:520px;margin:auto auto 0;background:#fff;max-height:92vh;max-height:92dvh}
+dialog::backdrop{background:rgba(40,40,40,.35)}
+dialog[open]{animation:up .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet{padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.sheet-head h3{font-size:16px;letter-spacing:.1em}
+.x{font-size:22px;color:var(--sub);width:36px;height:36px}
+
+/* tab bar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);z-index:10}
+nav.tabs .in{max-width:520px;margin:0 auto;display:flex;align-items:center;height:64px}
+nav.tabs button{flex:1;height:100%;font-size:11px;color:var(--sub);letter-spacing:.08em}
+nav.tabs button.on{color:var(--text);font-weight:700}
+nav.tabs button.on::before{background:var(--text)}
+nav.tabs button::before{content:"";display:block;width:18px;height:2px;margin:0 auto 6px;background:transparent}
+nav.tabs .add{flex:1.3}
+nav.tabs .add span{display:inline-block;background:var(--accent);color:#fff;font-size:14px;font-weight:700;letter-spacing:.08em;padding:10px 14px;white-space:nowrap}
+nav.tabs .add::before{display:none}
+
+/* toast & celebration */
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  background:var(--text);color:#fff;font-size:13px;padding:10px 16px;opacity:0;pointer-events:none;
+  transition:.3s;white-space:nowrap;z-index:30}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.celebrate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.96);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
+.celebrate.show{opacity:1;pointer-events:auto}
+.celebrate .plus{font-family:var(--num);font-weight:900;color:var(--accent);font-size:44px;transform:scale(.6);transition:transform .5s cubic-bezier(.3,1.6,.5,1)}
+.celebrate.show .plus{transform:scale(1)}
+.celebrate .msg{font-weight:700;letter-spacing:.15em;margin-top:6px}
+.celebrate .tot{margin-top:18px;font-size:13px;color:var(--sub)}
+.celebrate .tot b{font-family:var(--num);font-size:26px;color:var(--text);margin-left:6px}
+.celebrate .extra{margin-top:6px;font-size:13px;color:var(--sub);min-height:1.6em}
+.dot{position:fixed;width:7px;height:7px;background:var(--accent);z-index:41;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ホーム -->
+  <main class="view" id="v-home">
+    <section class="hero">
+      <p class="label">これまでに我慢した額</p>
+      <p class="big" id="total"><span class="yen">¥</span><span id="total-n">0</span></p>
+      <p class="month">今月 <b id="month-n">¥0</b></p>
+      <div class="split">
+        <div><span class="k">貯金に移した</span><span class="v" id="saved-n">¥0</span></div>
+        <div><span class="k">まだ移していない</span><span class="v" id="unsaved-n">¥0</span></div>
+      </div>
+    </section>
+
+    <section id="goal-sec">
+      <h2>目標</h2>
+      <div class="goal-head"><span class="goal-name" id="goal-name"></span><span class="goal-pct" id="goal-pct">0%</span></div>
+      <div class="bar"><i class="b-all" id="bar-all"></i><i class="b-saved" id="bar-saved"></i></div>
+      <div class="goal-head"><span class="muted" id="goal-left"></span><span class="muted num" id="goal-amt"></span></div>
+      <div class="legend" style="margin-top:6px"><span class="lg-saved">貯金に移した</span><span class="lg-all">我慢した（未移動）</span></div>
+    </section>
+
+    <section id="conv-sec">
+      <h2>我慢した額は…</h2>
+      <ul class="conv" id="conv"></ul>
+    </section>
+
+    <section class="chart">
+      <h2>月別の推移</h2>
+      <div id="chart"></div>
+      <div class="legend" style="margin-top:8px"><span class="lg-saved">貯金に移した</span><span class="lg-mid">我慢した（未移動）</span></div>
+    </section>
+
+    <section>
+      <h2>最近の我慢</h2>
+      <ul class="items" id="recent"></ul>
+    </section>
+  </main>
+
+  <!-- 履歴 -->
+  <main class="view" id="v-list" hidden>
+    <section>
+      <h2>履歴</h2>
+      <div class="filter" id="filter">
+        <button data-f="all" class="on">すべて</button>
+        <button data-f="gaman">我慢中</button>
+        <button data-f="saved">貯金に移した</button>
+        <button data-f="bought">やっぱり買った</button>
+      </div>
+      <p class="muted" id="list-sum" style="margin-bottom:4px"></p>
+      <ul class="items" id="all"></ul>
+    </section>
+  </main>
+
+  <!-- 設定 -->
+  <main class="view" id="v-settings" hidden>
+    <section>
+      <h2>目標</h2>
+      <label class="f"><span>目標の名前</span><input type="text" id="s-goal-name" placeholder="例：沖縄旅行"></label>
+      <label class="f"><span>目標額</span><div class="price-in"><input type="text" inputmode="numeric" id="s-goal-amt"></div></label>
+    </section>
+    <section>
+      <h2>換算アイテム</h2>
+      <p class="muted" style="margin-bottom:10px">累計額を「○○が何回分」で表示します</p>
+      <div id="s-conv"></div>
+      <button class="link-btn" id="s-conv-add">＋ 追加する</button>
+    </section>
+    <section>
+      <h2>カテゴリ</h2>
+      <label class="f"><span>1行に1つ</span><textarea id="s-cats" rows="6"></textarea></label>
+      <button class="btn primary" id="s-save">設定を保存</button>
+    </section>
+    <section>
+      <h2>データ</h2>
+      <p class="muted" style="margin-bottom:10px">データはこの端末のブラウザだけに保存されます。機種変更の前に書き出してください。</p>
+      <button class="btn" id="s-export">書き出す（JSON）</button>
+      <button class="btn" id="s-import">読み込む</button>
+      <input type="file" id="s-file" accept="application/json,.json" hidden>
+      <button class="btn ghost" id="s-reset">すべて消す</button>
+    </section>
+  </main>
+</div>
+
+<nav class="tabs"><div class="in">
+  <button data-v="home" class="on">ホーム</button>
+  <button data-v="list">履歴</button>
+  <button class="add" id="open-add"><span>＋ 我慢した</span></button>
+  <button data-v="settings">設定</button>
+</div></nav>
+
+<!-- 登録・編集シート -->
+<dialog id="sheet">
+  <form class="sheet" id="form" method="dialog" novalidate>
+    <div class="sheet-head"><h3 id="sheet-title">我慢した</h3><button type="button" class="x" id="close" aria-label="閉じる">×</button></div>
+    <label class="f"><span>商品名</span><input type="text" id="f-name" required placeholder="例：新作のスニーカー" autocomplete="off"></label>
+    <div class="row">
+      <label class="f"><span>金額</span><div class="price-in"><input type="text" inputmode="numeric" id="f-price" required placeholder="0"></div></label>
+      <label class="f"><span>日付</span><input type="date" id="f-date"></label>
+    </div>
+    <label class="f"><span>カテゴリ</span><select id="f-cat"></select></label>
+    <label class="f"><span>メモ / URL</span><textarea id="f-memo" rows="2" placeholder="なぜ我慢したか、商品ページのURLなど"></textarea></label>
+    <div id="f-status-wrap" hidden>
+      <div class="seg" id="f-status">
+        <button type="button" data-s="gaman">我慢中</button>
+        <button type="button" data-s="saved">貯金に移した</button>
+        <button type="button" data-s="bought">やっぱり買った</button>
+      </div>
+    </div>
+    <button type="submit" class="btn primary" id="f-submit">記録する</button>
+    <button type="button" class="btn ghost" id="f-delete" hidden>この記録を消す</button>
+  </form>
+</dialog>
+
+<div class="celebrate" id="cele">
+  <div class="plus" id="cele-plus">+¥0</div>
+  <div class="msg">我慢できた！</div>
+  <div class="tot">累計<b id="cele-tot">¥0</b></div>
+  <div class="extra" id="cele-extra"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const KEY = 'gaman-chokin-v1';
+const DEFAULT_SETTINGS = {
+  goalName: '旅行',
+  goalAmount: 100000,
+  conversions: [{name:'カフェラテ',price:500},{name:'ランチ',price:1000},{name:'映画',price:2000}],
+  categories: ['食べ物','飲み物','服・小物','ガジェット','趣味','その他'],
+};
+const STATUS_LABEL = {gaman:'我慢中', saved:'貯金に移した', bought:'やっぱり買った'};
+
+let state = load();
+let editingId = null;
+let editStatus = 'gaman';
+let listFilter = 'all';
+
+/* ---------- storage ---------- */
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.items)) return {items:s.items, settings:{...DEFAULT_SETTINGS, ...s.settings}};
+  }catch(e){}
+  return {items:[], settings:structuredClone(DEFAULT_SETTINGS)};
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast('保存できませんでした（容量やプライベートモードを確認）'); }
+}
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+function today(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function thisMonth(){ return today().slice(0,7); }
+function parseYen(s){
+  const t = String(s).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[^0-9]/g,'');
+  return t ? parseInt(t,10) : 0;
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function totals(items){
+  let gaman=0, saved=0, bought=0;
+  for (const it of items){
+    if (it.status === 'bought') bought += it.price;
+    else { gaman += it.price; if (it.status === 'saved') saved += it.price; }
+  }
+  return {gaman, saved, bought, unsaved:gaman-saved};
+}
+function sorted(){ return [...state.items].sort((a,b)=> b.date.localeCompare(a.date) || b.createdAt - a.createdAt); }
+function memoHtml(m){
+  if (!m) return '';
+  const html = esc(m).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.length>40?u.slice(0,40)+'…':u}</a>`);
+  return `<div class="item-memo">${html}</div>`;
+}
+
+/* ---------- count-up ---------- */
+function countUp(el, from, to, dur=1000, fmt=yen){
+  const start = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now-start)/dur);
+    const e = 1 - Math.pow(1-p, 3);
+    el.textContent = fmt(from + (to-from)*e);
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderHome();
+  renderList();
+}
+
+function renderHome(animateFrom){
+  const t = totals(state.items);
+  const m = totals(state.items.filter(i => i.date.startsWith(thisMonth())));
+  const nFmt = n => Math.round(n).toLocaleString('ja-JP');
+  if (animateFrom != null){
+    countUp($('total-n'), animateFrom, t.gaman, 1400, nFmt);
+    $('total').classList.add('pop');
+    setTimeout(()=> $('total').classList.remove('pop'), 1800);
+  } else {
+    $('total-n').textContent = nFmt(t.gaman);
+  }
+  $('month-n').textContent = yen(m.gaman);
+  $('saved-n').textContent = yen(t.saved);
+  $('unsaved-n').textContent = yen(t.unsaved);
+
+  // goal
+  const s = state.settings;
+  const goal = s.goalAmount || 0;
+  $('goal-sec').hidden = !goal;
+  if (goal){
+    const pctAll = Math.min(100, t.gaman/goal*100);
+    const pctSaved = Math.min(100, t.saved/goal*100);
+    $('goal-name').textContent = s.goalName || '目標';
+    $('goal-pct').textContent = Math.floor(pctAll) + '%';
+    $('bar-all').style.width = pctAll + '%';
+    $('bar-saved').style.width = pctSaved + '%';
+    $('goal-amt').textContent = `${yen(t.gaman)} / ${yen(goal)}`;
+    $('goal-left').textContent = t.gaman >= goal ? '達成！' : `あと ${yen(goal - t.gaman)}`;
+  }
+
+  // conversions
+  const conv = s.conversions.filter(c => c.name && c.price > 0);
+  $('conv-sec').hidden = !conv.length;
+  $('conv').innerHTML = conv.map(c => {
+    const n = Math.floor(t.gaman / c.price);
+    return `<li><span>${esc(c.name)} <span class="muted">${yen(c.price)}</span></span><span class="n">${n.toLocaleString('ja-JP')}<small>回分</small></span></li>`;
+  }).join('');
+
+  renderChart();
+
+  const recent = sorted().slice(0,5);
+  $('recent').innerHTML = recent.length ? recent.map(itemHtml).join('')
+    : '<li class="empty">まだ記録がありません。<br>買うのをやめたら「＋ 我慢した」から記録しよう。</li>';
+}
+
+function renderChart(){
+  const months = [];
+  const d = new Date(); d.setDate(1);
+  for (let i=5; i>=0; i--){
+    const x = new Date(d.getFullYear(), d.getMonth()-i, 1);
+    months.push(`${x.getFullYear()}-${pad(x.getMonth()+1)}`);
+  }
+  const data = months.map(k => ({k, ...totals(state.items.filter(i => i.date.startsWith(k)))}));
+  const max = Math.max(1, ...data.map(x => x.gaman));
+  const W=340, H=170, top=22, bottom=26, h=H-top-bottom, bw=30, gap=(W - bw*6)/6;
+  const short = n => n>=10000 ? (n/10000).toFixed(n>=100000?0:1).replace(/\.0$/,'')+'万' : n.toLocaleString('ja-JP');
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="直近6か月の我慢額">`;
+  svg += `<line x1="0" x2="${W}" y1="${top+h}" y2="${top+h}" stroke="#e6e6e6"/>`;
+  data.forEach((x,i) => {
+    const cx = gap/2 + i*(bw+gap);
+    const ha = x.gaman/max*h, hs = x.saved/max*h;
+    const isNow = i === 5;
+    if (x.gaman > 0){
+      svg += `<rect x="${cx}" y="${top+h-ha}" width="${bw}" height="${ha}" fill="#c9c9c9"/>`;
+      if (hs > 0) svg += `<rect x="${cx}" y="${top+h-hs}" width="${bw}" height="${hs}" fill="#ff4b1e"/>`;
+      svg += `<text x="${cx+bw/2}" y="${top+h-ha-6}" text-anchor="middle" font-size="11" font-family="Lato,sans-serif" font-weight="700" fill="#545454">${short(x.gaman)}</text>`;
+    }
+    svg += `<text x="${cx+bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="${isNow?'#545454':'#9a9a9a'}" font-weight="${isNow?700:400}">${parseInt(x.k.slice(5),10)}月</text>`;
+  });
+  svg += '</svg>';
+  $('chart').innerHTML = svg;
+}
+
+function itemHtml(it){
+  const tag = '';
+  return `<li class="item ${it.status}" data-id="${it.id}">
+    <button class="item-main" data-act="edit"><span class="item-name">${esc(it.name)}</span><span class="item-price">${yen(it.price)}</span></button>
+    <div class="item-meta"><span>${it.date.replace(/-/g,'/')}</span><span>${esc(it.category)}</span>${tag}</div>
+    ${memoHtml(it.memo)}
+    <div class="chips">
+      <button class="chip ${it.status==='saved'?'on-saved':''}" data-act="saved">貯金に移した</button>
+      <button class="chip ${it.status==='bought'?'on-bought':''}" data-act="bought">やっぱり買った</button>
+    </div>
+  </li>`;
+}
+
+function renderList(){
+  const items = sorted().filter(i => listFilter==='all' || i.status===listFilter);
+  const t = totals(items);
+  $('list-sum').textContent = `${items.length}件　` + (listFilter==='bought' ? `合計 ${yen(t.bought)}` : `我慢額 ${yen(t.gaman)}`);
+  $('all').innerHTML = items.length ? items.map(itemHtml).join('') : '<li class="empty">該当する記録はありません</li>';
+}
+
+/* ---------- item actions ---------- */
+function onItemClick(e){
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const li = btn.closest('.item'); const it = state.items.find(x => x.id === li.dataset.id); if (!it) return;
+  const act = btn.dataset.act;
+  if (act === 'edit') return openSheet(it);
+  const before = it.status;
+  it.status = it.status === act ? 'gaman' : act;
+  save(); render();
+  if (it.status === 'saved') toast(`${yen(it.price)} を貯金に移しました`);
+  else if (it.status === 'bought') toast('買ったものは我慢額から外しました');
+  else if (before !== 'gaman') toast('我慢中に戻しました');
+}
+$('recent').addEventListener('click', onItemClick);
+$('all').addEventListener('click', onItemClick);
+$('filter').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  listFilter = b.dataset.f;
+  [...$('filter').children].forEach(x => x.classList.toggle('on', x===b));
+  renderList();
+});
+
+/* ---------- sheet ---------- */
+function fillCats(selected){
+  const cats = state.settings.categories.length ? state.settings.categories : ['その他'];
+  const list = selected && !cats.includes(selected) ? [...cats, selected] : cats;
+  $('f-cat').innerHTML = list.map(c => `<option${c===selected?' selected':''}>${esc(c)}</option>`).join('');
+}
+function setSeg(s){
+  editStatus = s;
+  [...$('f-status').children].forEach(b => b.classList.toggle('on', b.dataset.s===s));
+}
+function openSheet(it){
+  editingId = it ? it.id : null;
+  $('sheet-title').textContent = it ? '記録を編集' : '我慢した';
+  $('f-name').value = it?.name ?? '';
+  $('f-price').value = it ? it.price.toLocaleString('ja-JP') : '';
+  $('f-date').value = it?.date ?? today();
+  fillCats(it?.category);
+  $('f-memo').value = it?.memo ?? '';
+  $('f-status-wrap').hidden = !it;
+  $('f-delete').hidden = !it;
+  $('f-submit').textContent = it ? '保存する' : '記録する';
+  setSeg(it?.status ?? 'gaman');
+  $('sheet').showModal();
+  if (!it) setTimeout(()=> $('f-name').focus(), 50);
+}
+$('open-add').addEventListener('click', () => openSheet());
+$('close').addEventListener('click', () => $('sheet').close());
+$('sheet').addEventListener('click', e => { if (e.target === $('sheet')) $('sheet').close(); });
+$('f-status').addEventListener('click', e => { const b=e.target.closest('button'); if (b) setSeg(b.dataset.s); });
+$('f-price').addEventListener('input', e => {
+  const n = parseYen(e.target.value);
+  e.target.value = n ? n.toLocaleString('ja-JP') : '';
+});
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('f-name').value.trim();
+  const price = parseYen($('f-price').value);
+  if (!name){ $('f-name').focus(); return toast('商品名を入れてください'); }
+  if (!price){ $('f-price').focus(); return toast('金額を入れてください'); }
+  const data = {name, price, date:$('f-date').value || today(), category:$('f-cat').value, memo:$('f-memo').value.trim()};
+  const prevTotal = totals(state.items).gaman;
+  if (editingId){
+    Object.assign(state.items.find(x => x.id===editingId), data, {status:editStatus});
+    save(); $('sheet').close(); render(); toast('保存しました');
+  } else {
+    state.items.push({id:uid(), ...data, status:'gaman', createdAt:Date.now()});
+    save(); $('sheet').close();
+    show('home');
+    renderList();
+    celebrate(price, prevTotal);
+  }
+});
+$('f-delete').addEventListener('click', () => {
+  if (!confirm('この記録を消しますか？')) return;
+  state.items = state.items.filter(x => x.id !== editingId);
+  save(); $('sheet').close(); render(); toast('消しました');
+});
+
+/* ---------- celebration ---------- */
+function celebrate(price, prevTotal){
+  const t = totals(state.items).gaman;
+  const el = $('cele');
+  $('cele-plus').textContent = '+¥0';
+  $('cele-tot').textContent = yen(prevTotal);
+  // 換算アイテムで一番安いものを使って「あと何回分」を出す
+  const conv = state.settings.conversions.filter(c => c.name && c.price>0).sort((a,b)=>a.price-b.price)[0];
+  const goal = state.settings.goalAmount;
+  let extra = '';
+  if (goal && prevTotal < goal && t >= goal) extra = `🎉 目標「${state.settings.goalName}」達成！`;
+  else if (conv && price >= conv.price) extra = `${conv.name} ${Math.floor(price/conv.price)}回分`;
+  else if (goal && t < goal) extra = `目標まであと ${yen(goal - t)}`;
+  $('cele-extra').textContent = extra;
+  renderHome(prevTotal);
+  requestAnimationFrame(() => el.classList.add('show'));
+  countUp($('cele-plus'), 0, price, 700, n => '+' + yen(n));
+  setTimeout(() => countUp($('cele-tot'), prevTotal, t, 900), 350);
+  burst();
+  if (navigator.vibrate) navigator.vibrate([15,40,25]);
+  const close = () => { el.classList.remove('show'); el.removeEventListener('click', close); clearTimeout(timer); };
+  const timer = setTimeout(close, 2200);
+  el.addEventListener('click', close);
+}
+function burst(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cx = innerWidth/2, cy = innerHeight/2 - 30;
+  const colors = ['#ff4b1e','#f8a23d','#93a0b6','#c1b8ae','#545454'];
+  for (let i=0; i<22; i++){
+    const d = document.createElement('i');
+    d.className = 'dot';
+    d.style.background = colors[i % colors.length];
+    d.style.left = cx+'px'; d.style.top = cy+'px';
+    document.body.appendChild(d);
+    const a = Math.random()*Math.PI*2, r = 90 + Math.random()*110;
+    d.animate([
+      {transform:'translate(-50%,-50%) scale(1)', opacity:1},
+      {transform:`translate(calc(-50% + ${Math.cos(a)*r}px), calc(-50% + ${Math.sin(a)*r + 60}px)) rotate(${Math.random()*360}deg) scale(.6)`, opacity:0}
+    ], {duration:900 + Math.random()*500, easing:'cubic-bezier(.2,.8,.3,1)'}).onfinish = () => d.remove();
+  }
+}
+
+/* ---------- tabs ---------- */
+function show(v){
+  ['home','list','settings'].forEach(x => $('v-'+x).hidden = x!==v);
+  document.querySelectorAll('nav.tabs [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v===v));
+  if (v === 'settings') fillSettings();
+  scrollTo(0,0);
+}
+document.querySelectorAll('nav.tabs [data-v]').forEach(b => b.addEventListener('click', () => show(b.dataset.v)));
+
+/* ---------- settings ---------- */
+function convRow(c={name:'',price:''}){
+  const div = document.createElement('div');
+  div.className = 'conv-edit';
+  div.innerHTML = `<input type="text" placeholder="例：カフェラテ" value="${esc(c.name)}"><input type="text" inputmode="numeric" placeholder="金額" value="${c.price?c.price.toLocaleString('ja-JP'):''}"><button type="button" aria-label="削除">×</button>`;
+  div.querySelector('button').onclick = () => div.remove();
+  return div;
+}
+function fillSettings(){
+  const s = state.settings;
+  $('s-goal-name').value = s.goalName;
+  $('s-goal-amt').value = s.goalAmount ? s.goalAmount.toLocaleString('ja-JP') : '';
+  $('s-conv').innerHTML = '';
+  s.conversions.forEach(c => $('s-conv').appendChild(convRow(c)));
+  $('s-cats').value = s.categories.join('\n');
+}
+$('s-conv-add').addEventListener('click', () => { const r=convRow(); $('s-conv').appendChild(r); r.querySelector('input').focus(); });
+$('s-goal-amt').addEventListener('input', e => { const n=parseYen(e.target.value); e.target.value = n ? n.toLocaleString('ja-JP') : ''; });
+$('s-save').addEventListener('click', () => {
+  const s = state.settings;
+  s.goalName = $('s-goal-name').value.trim();
+  s.goalAmount = parseYen($('s-goal-amt').value);
+  s.conversions = [...$('s-conv').children].map(r => {
+    const [n,p] = r.querySelectorAll('input');
+    return {name:n.value.trim(), price:parseYen(p.value)};
+  }).filter(c => c.name && c.price>0);
+  s.categories = [...new Set($('s-cats').value.split('\n').map(x=>x.trim()).filter(Boolean))];
+  save(); render(); fillSettings(); toast('設定を保存しました');
+});
+$('s-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gaman-chokin-${today()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('s-import').addEventListener('click', () => $('s-file').click());
+$('s-file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.items)) throw 0;
+    if (!confirm(`${d.items.length}件の記録を読み込みます。今のデータは置き換わります。よろしいですか？`)) return;
+    state = {items:d.items, settings:{...DEFAULT_SETTINGS, ...d.settings}};
+    save(); render(); fillSettings(); toast('読み込みました');
+  }catch(err){ toast('読み込めないファイルです'); }
+  e.target.value = '';
+});
+$('s-reset').addEventListener('click', () => {
+  if (!confirm('すべての記録と設定を消します。元に戻せません。よろしいですか？')) return;
+  state = {items:[], settings:structuredClone(DEFAULT_SETTINGS)};
+  save(); render(); fillSettings(); toast('すべて消しました');
+});
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+render();
+if ('serviceWorker' in navigator && location.protocol !== 'file:'){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
